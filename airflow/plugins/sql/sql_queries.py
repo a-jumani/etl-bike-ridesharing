@@ -18,6 +18,10 @@ class SqlInitTables:
 
     drop_fact_n_dims_tables = """
         DROP TABLE IF EXISTS public.fact_bike_rides;
+        DROP TABLE IF EXISTS public.dim_time;
+        DROP TABLE IF EXISTS public.dim_station;
+        DROP TABLE IF EXISTS public.dim_weather_desc;
+        DROP TABLE IF EXISTS public.dim_holiday;
     """
 
     create_staging_tables = """
@@ -71,4 +75,38 @@ class SqlInitTables:
         )
         DISTKEY (pickup_time)
         SORTKEY (pickup_time);
+
+        CREATE TABLE IF NOT EXISTS public.dim_time (
+            time    TIMESTAMP PRIMARY KEY,
+            hour    SMALLINT NOT NULL,
+            day     SMALLINT NOT NULL,
+            week    SMALLINT NOT NULL,
+            month   SMALLINT NOT NULL,
+            year    SMALLINT NOT NULL,
+            weekday SMALLINT NOT NULL
+        )
+        DISTKEY (time)
+        SORTKEY (time);
+
+        CREATE TABLE IF NOT EXISTS public.dim_station (
+            id        INTEGER IDENTITY (1, 1) PRIMARY KEY,
+            longitude NUMERIC (13, 10) NOT NULL,
+            latitude  NUMERIC (13, 10) NOT NULL
+        )
+        DISTSTYLE ALL
+        SORTKEY (id);
+
+        CREATE TABLE IF NOT EXISTS public.dim_weather_desc (
+            id   INTEGER IDENTITY (1, 1) PRIMARY KEY,
+            desp VARCHAR (50) NOT NULL
+        )
+        DISTSTYLE ALL
+        SORTKEY (id);
+
+        CREATE TABLE IF NOT EXISTS public.dim_holiday (
+            date DATE PRIMARY KEY,
+            desp VARCHAR (50)
+        )
+        DISTSTYLE ALL
+        SORTKEY (date);
     """
