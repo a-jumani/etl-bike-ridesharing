@@ -16,6 +16,10 @@ class SqlInitTables:
         DELETE FROM public.staging_weather_desc;
     """
 
+    drop_fact_n_dims_tables = """
+        DROP TABLE IF EXISTS public.fact_bike_rides;
+    """
+
     create_staging_tables = """
         CREATE TABLE IF NOT EXISTS public.staging_bike_rides (
             id                INTEGER NOT NULL,
@@ -49,4 +53,22 @@ class SqlInitTables:
             datetime TIMESTAMP NOT NULL,
             value    VARCHAR (50)
         );
+    """
+
+    create_fact_n_dims_tables = """
+        CREATE TABLE IF NOT EXISTS public.fact_bike_rides (
+            id                 INTEGER IDENTITY (1, 1) PRIMARY KEY,
+            customer_id        INTEGER,
+            gender             SMALLINT NOT NULL DEFAULT 0,
+            pickup_time        TIMESTAMP NOT NULL,
+            dropoff_time       TIMESTAMP NOT NULL,
+            pickup_station_id  INTEGER NOT NULL,
+            dropoff_station_id INTEGER NOT NULL,
+            trip_duration      INTEGER NOT NULL,
+            weather_desc_id    SMALLINT NOT NULL,
+            temperature        NUMERIC (7, 3) NOT NULL,
+            humidity           NUMERIC (5, 1) NOT NULL
+        )
+        DISTKEY (pickup_time)
+        SORTKEY (pickup_time);
     """
