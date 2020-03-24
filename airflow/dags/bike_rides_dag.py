@@ -1,6 +1,8 @@
 from datetime import datetime
 from airflow import DAG
+from airflow.models import Variable
 from airflow.operators.postgres_operator import PostgresOperator
+from airflow.operators.custom_plugin import StageRedshiftOperator
 from sql.sql_queries import SqlInitTables
 
 default_args = {
@@ -39,7 +41,64 @@ create_fact_n_dims = PostgresOperator(
     sql=SqlInitTables.create_fact_n_dims_tables
 )
 
-# TODO: load and test staging tables
+# task: load temperature data into staging table
+stage_temp_to_redshift = StageRedshiftOperator(
+    task_id="Stage_temperature",
+    dag=dag,
+    table="public.staging_temperature",
+    s3_path=Variable.get("temperature_data_path"),
+    iam_role=Variable.get("iam_role"),
+    redshift_conn_id="redshift",
+    json_path=Variable.get("weather_json_path")
+)
+
+# task: load humidity data into staging table
+stage_humid_to_redshift = StageRedshiftOperator(
+    task_id="Stage_humidity",
+    dag=dag,
+    table="public.staging_humidity",
+    s3_path=Variable.get("humidity_data_path"),
+    iam_role=Variable.get("iam_role"),
+    redshift_conn_id="redshift",
+    json_path=Variable.get("weather_json_path")
+)
+
+# task: load weather description data into staging table
+stage_weather_desc_to_redshift = StageRedshiftOperator(
+    task_id="Stage_weather_desc",
+    dag=dag,
+    table="public.staging_weather_desc",
+    s3_path=Variable.get("weather_desc_data_path"),
+    iam_role=Variable.get("iam_role"),
+    redshift_conn_id="redshift",
+    json_path=Variable.get("weather_json_path")
+)
+
+# task: load holidays data into staging table
+stage_holidays_to_redshift = StageRedshiftOperator(
+    task_id="Stage_holidays",
+    dag=dag,
+    table="public.staging_holiday",
+    s3_path=Variable.get("holidays_data_path"),
+    iam_role=Variable.get("iam_role"),
+    redshift_conn_id="redshift",
+    json_path=Variable.get("holidays_json_path")
+)
+
+# task: load bike rides data into staging table
+stage_bike_rides_to_redshift = StageRedshiftOperator(
+    task_id="Stage_bike_rides",
+    dag=dag,
+    table="public.staging_bike_rides",
+    s3_path=Variable.get("bike_rides_data_path"),
+    iam_role=Variable.get("iam_role"),
+    redshift_conn_id="redshift",
+    ext="csv",
+    ignore_header=True,
+    time_format="YYYY-MM-DD HH:MI:SS"
+)
+
+# TODO: test staging tables
 # TODO: load and test dimension tables
 # TODO: load and test fact table
 
@@ -53,6 +112,13 @@ end_n_clear_staging = PostgresOperator(
 
 # prepare staging area
 drop_staging_tables >> create_staging_tables
+
+# load staging tables
+create_staging_tables >> stage_bike_rides_to_redshift
+create_staging_tables >> stage_holidays_to_redshift
+create_staging_tables >> stage_humid_to_redshift
+create_staging_tables >> stage_temp_to_redshift
+create_staging_tables >> stage_weather_desc_to_redshift
 
 # clear staging tables
 [create_fact_n_dims, create_staging_tables] >> end_n_clear_staging

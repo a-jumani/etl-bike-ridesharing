@@ -1,0 +1,10 @@
+{
+    "bike_rides_data_path":     "s3://udac-data-eng-cap-data/citi_bike_2016.csv",
+    "holidays_data_path":       "s3://udac-data-eng-cap-data/NYC_2016Holidays.json",
+    "holidays_json_path":       "s3://udac-data-eng-cap-data/holiday_json_path.json",
+    "humidity_data_path":       "s3://udac-data-eng-cap-data/historical-hourly-weather-data/humidity.json",
+    "iam_role":                 "",
+    "temperature_data_path":    "s3://udac-data-eng-cap-data/historical-hourly-weather-data/temperature.json",
+    "weather_desc_data_path":   "s3://udac-data-eng-cap-data/historical-hourly-weather-data/weather_description.json",
+    "weather_json_path":        "s3://udac-data-eng-cap-data/historical-hourly-weather-data/weather_json_path.json"
+}
