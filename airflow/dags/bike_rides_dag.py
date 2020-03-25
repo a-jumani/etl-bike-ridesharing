@@ -2,8 +2,10 @@ from datetime import datetime
 from airflow import DAG
 from airflow.models import Variable
 from airflow.operators.postgres_operator import PostgresOperator
-from airflow.operators.custom_plugin import StageRedshiftOperator
+from airflow.operators.custom_plugin import StageRedshiftOperator, \
+    PostgresCheckOperator, PostgresValueCheckOperator
 from sql.sql_queries import SqlInitTables
+from sql.tests import SqlStagingTestsCheck
 
 default_args = {
     "owner": "a-jumani",
@@ -98,7 +100,48 @@ stage_bike_rides_to_redshift = StageRedshiftOperator(
     time_format="YYYY-MM-DD HH:MI:SS"
 )
 
-# TODO: test staging tables
+# task: test holidays staging table
+test_staging_holidays = PostgresCheckOperator(
+    task_id="Test_staging_holidays",
+    dag=dag,
+    sql=SqlStagingTestsCheck.check_holidays,
+    postgres_conn_id="redshift"
+)
+
+# task: test temperature staging table
+test_staging_temperature = PostgresCheckOperator(
+    task_id="Test_staging_temperature",
+    dag=dag,
+    sql=SqlStagingTestsCheck.check_temperature,
+    postgres_conn_id="redshift"
+)
+
+# task: test humidity staging table
+test_staging_humidity = PostgresCheckOperator(
+    task_id="Test_staging_humidity",
+    dag=dag,
+    sql=SqlStagingTestsCheck.check_humidity,
+    postgres_conn_id="redshift"
+)
+
+# task: test weather description staging table
+test_staging_weather_desc = PostgresCheckOperator(
+    task_id="Test_staging_weather_desc",
+    dag=dag,
+    sql=SqlStagingTestsCheck.check_weather_desc,
+    postgres_conn_id="redshift"
+)
+
+# task: test bike rides staging table
+test_staging_bike_rides = PostgresValueCheckOperator(
+    task_id="Test_staging_bike_rides",
+    dag=dag,
+    sql=SqlStagingTestsCheck.check_value_bike_rides["query"],
+    pass_value=SqlStagingTestsCheck.check_value_bike_rides["value"],
+    postgres_conn_id="redshift",
+    tolerance=SqlStagingTestsCheck.check_value_bike_rides["tolerance"]
+)
+
 # TODO: load and test dimension tables
 # TODO: load and test fact table
 
@@ -119,6 +162,13 @@ create_staging_tables >> stage_holidays_to_redshift
 create_staging_tables >> stage_humid_to_redshift
 create_staging_tables >> stage_temp_to_redshift
 create_staging_tables >> stage_weather_desc_to_redshift
+
+# run tests on staging tables
+stage_bike_rides_to_redshift >> test_staging_bike_rides
+stage_holidays_to_redshift >> test_staging_holidays
+stage_humid_to_redshift >> test_staging_humidity
+stage_temp_to_redshift >> test_staging_temperature
+stage_weather_desc_to_redshift >> test_staging_weather_desc
 
 # clear staging tables
 [create_fact_n_dims, create_staging_tables] >> end_n_clear_staging
