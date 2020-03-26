@@ -110,3 +110,34 @@ class SqlInitTables:
         DISTSTYLE ALL
         SORTKEY (date);
     """
+
+
+class SqlQueries:
+
+    load_dim_time = """
+        SELECT ts, EXTRACT(hour FROM ts), EXTRACT(day FROM ts),
+            EXTRACT(week FROM ts), EXTRACT(month FROM ts),
+            EXTRACT(year FROM ts), EXTRACT(dayofweek FROM ts)
+        FROM (SELECT pickup_datetime AS ts FROM public.staging_bike_rides
+              UNION
+              SELECT dropoff_datetime AS ts FROM public.staging_bike_rides)
+    """
+
+    load_dim_weather_desc = """
+        SELECT DISTINCT value as desp
+        FROM public.staging_weather_desc
+        WHERE value IS NOT NULL
+    """
+
+    load_dim_station = """
+        (SELECT pickup_longitude AS longitude, pickup_latitude AS latitude
+        FROM public.staging_bike_rides)
+        UNION
+        (SELECT dropoff_longitude AS longitude, dropoff_latitude AS latitude
+        FROM public.staging_bike_rides)
+    """
+
+    load_dim_holiday = """
+        SELECT TO_DATE(CONCAT(date, ' 2016'), 'Month DD YYYY'), holiday
+        FROM public.staging_holiday
+    """
