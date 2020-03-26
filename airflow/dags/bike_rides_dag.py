@@ -1,6 +1,7 @@
 from datetime import datetime
 from airflow import DAG
 from airflow.models import Variable
+from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.custom_plugin import StageRedshiftOperator, \
     PostgresCheckOperator, PostgresValueCheckOperator
@@ -142,7 +143,20 @@ test_staging_bike_rides = PostgresValueCheckOperator(
     tolerance=SqlStagingTestsCheck.check_value_bike_rides["tolerance"]
 )
 
+# task: dummy staging complete
+staging_complete = DummyOperator(
+    task_id="Staging_complete",
+    dag=dag
+)
+
 # TODO: load and test dimension tables
+
+# task: dummy dimensions loaded
+dims_loaded = DummyOperator(
+    task_id="Dimensions_loaded",
+    dag=dag
+)
+
 # TODO: load and test fact table
 
 # task: clear staging area
@@ -170,5 +184,21 @@ stage_humid_to_redshift >> test_staging_humidity
 stage_temp_to_redshift >> test_staging_temperature
 stage_weather_desc_to_redshift >> test_staging_weather_desc
 
+# staging complete
+[test_staging_bike_rides,
+ test_staging_holidays,
+ test_staging_humidity,
+ test_staging_temperature,
+ test_staging_weather_desc] >> staging_complete
+
+# load dimensions
+staging_complete >> dims_loaded
+
+# test dimensions
+
+# load fact table
+
+# test fact table
+
 # clear staging tables
-[create_fact_n_dims, create_staging_tables] >> end_n_clear_staging
+dims_loaded >> end_n_clear_staging
