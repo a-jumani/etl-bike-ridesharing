@@ -141,3 +141,24 @@ class SqlQueries:
         SELECT TO_DATE(CONCAT(date, ' 2016'), 'Month DD YYYY'), holiday
         FROM public.staging_holiday
     """
+
+    load_fact_bike_rides = """
+        SELECT r.id, r.gender, r.pickup_datetime, r.dropoff_datetime, sp.id,
+            sd.id, r.trip_duration, w.id, t.value, h.value
+        FROM public.staging_bike_rides r
+            JOIN public.dim_station sp
+                ON r.pickup_longitude=sp.longitude AND
+                    r.pickup_latitude=sp.latitude
+            JOIN public.dim_station sd
+                ON r.dropoff_longitude=sd.longitude AND
+                    r.dropoff_latitude=sd.latitude
+            LEFT JOIN public.staging_temperature t
+                ON DATE_TRUNC('hour', r.pickup_datetime)=t.datetime
+            LEFT JOIN public.staging_humidity h
+                ON DATE_TRUNC('hour', r.pickup_datetime)=h.datetime
+            LEFT JOIN (SELECT sw.datetime AS datetime, dw.id AS id
+                       FROM public.staging_weather_desc sw
+                           JOIN public.dim_weather_desc dw
+                               ON sw.value=dw.desp) w
+                ON DATE_TRUNC('hour', r.pickup_datetime)=w.datetime
+    """
