@@ -6,7 +6,7 @@ from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.custom_plugin import StageRedshiftOperator, \
     LoadDimensionOperator, PostgresCheckOperator, PostgresValueCheckOperator
 from sql.sql_queries import SqlInitTables, SqlQueries
-from sql.tests import SqlStagingTestsCheck
+from sql.tests import SqlStagingTestsCheck, SqlFactsNDimTestsCheck
 
 default_args = {
     "owner": "a-jumani",
@@ -195,7 +195,43 @@ load_dim_holiday = LoadDimensionOperator(
     empty_table=True
 )
 
-# TODO: test dimension tables
+# task: test weather description dimension table
+test_dim_weather_desc = PostgresCheckOperator(
+    task_id="Test_dim_weather_desc",
+    dag=dag,
+    sql=SqlFactsNDimTestsCheck.check_weather_desc,
+    postgres_conn_id="redshift"
+)
+
+# task: test time dimension table
+test_dim_time = PostgresValueCheckOperator(
+    task_id="Test_dim_time",
+    dag=dag,
+    sql=SqlFactsNDimTestsCheck.check_value_time["query"],
+    pass_value=SqlFactsNDimTestsCheck.check_value_time["value"],
+    postgres_conn_id="redshift",
+    tolerance=SqlFactsNDimTestsCheck.check_value_time["tolerance"]
+)
+
+# task: test holiday dimension table
+test_dim_holiday = PostgresValueCheckOperator(
+    task_id="Test_dim_holiday",
+    dag=dag,
+    sql=SqlFactsNDimTestsCheck.check_value_holidays["query"],
+    pass_value=SqlFactsNDimTestsCheck.check_value_holidays["value"],
+    postgres_conn_id="redshift",
+    tolerance=SqlFactsNDimTestsCheck.check_value_holidays["tolerance"]
+)
+
+# task: test station dimension table
+test_dim_station = PostgresValueCheckOperator(
+    task_id="Test_dim_station",
+    dag=dag,
+    sql=SqlFactsNDimTestsCheck.check_value_station["query"],
+    pass_value=SqlFactsNDimTestsCheck.check_value_station["value"],
+    postgres_conn_id="redshift",
+    tolerance=SqlFactsNDimTestsCheck.check_value_station["tolerance"]
+)
 
 # task: dummy dimensions loaded
 dims_loaded = DummyOperator(
@@ -238,14 +274,22 @@ stage_weather_desc_to_redshift >> test_staging_weather_desc
  test_staging_weather_desc] >> staging_complete
 
 # load dimensions
-[create_fact_n_dims, staging_complete] >> load_dim_time >> dims_loaded
-[create_fact_n_dims, staging_complete] >> load_dim_station >> dims_loaded
-[create_fact_n_dims, staging_complete] >> load_dim_holiday >> dims_loaded
-[create_fact_n_dims, staging_complete] >> load_dim_weather_desc >> dims_loaded
+[create_fact_n_dims, staging_complete] >> load_dim_time
+[create_fact_n_dims, staging_complete] >> load_dim_station
+[create_fact_n_dims, staging_complete] >> load_dim_holiday
+[create_fact_n_dims, staging_complete] >> load_dim_weather_desc
 
 # test dimensions
+load_dim_time >> test_dim_time
+load_dim_station >> test_dim_station
+load_dim_holiday >> test_dim_holiday
+load_dim_weather_desc >> test_dim_weather_desc
 
 # load fact table
+[test_dim_time,
+ test_dim_station,
+ test_dim_holiday,
+ test_dim_weather_desc] >> dims_loaded
 
 # test fact table
 
