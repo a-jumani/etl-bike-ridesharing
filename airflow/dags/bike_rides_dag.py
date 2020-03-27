@@ -4,7 +4,8 @@ from airflow.models import Variable
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.operators.custom_plugin import StageRedshiftOperator, \
-    LoadDimensionOperator, PostgresCheckOperator, PostgresValueCheckOperator
+    LoadDimensionOperator, LoadFactOperator, PostgresCheckOperator, \
+    PostgresValueCheckOperator
 from sql.sql_queries import SqlInitTables, SqlQueries
 from sql.tests import SqlStagingTestsCheck, SqlFactsNDimTestsCheck
 
@@ -239,7 +240,20 @@ dims_loaded = DummyOperator(
     dag=dag
 )
 
-# TODO: load and test fact table
+# task: load bike rides fact table
+load_fact_bike_rides = LoadFactOperator(
+    task_id="Load_fact_bike_rides",
+    dag=dag,
+    redshift_conn_id="redshift",
+    database="public",
+    table="fact_bike_rides",
+    variables="(customer_id, gender, pickup_time, dropoff_time, \
+        pickup_station_id, dropoff_station_id, trip_duration, \
+        weather_desc_id, temperature, humidity)",
+    select_clause=SqlQueries.load_fact_bike_rides
+)
+
+# TODO: test fact table
 
 # task: clear staging area
 end_n_clear_staging = PostgresOperator(
@@ -289,7 +303,7 @@ load_dim_weather_desc >> test_dim_weather_desc
 [test_dim_time,
  test_dim_station,
  test_dim_holiday,
- test_dim_weather_desc] >> dims_loaded
+ test_dim_weather_desc] >> dims_loaded >> load_fact_bike_rides
 
 # test fact table
 
