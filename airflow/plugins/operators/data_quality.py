@@ -1,4 +1,5 @@
 from airflow.hooks.postgres_hook import PostgresHook
+from airflow.models import BaseOperator
 from airflow.operators.check_operator import CheckOperator, \
     ValueCheckOperator
 from airflow.utils.decorators import apply_defaults
@@ -64,3 +65,80 @@ class PostgresValueCheckOperator(ValueCheckOperator):
 
     def get_db_hook(self):
         return PostgresHook(self.postgres_conn_id)
+
+
+class PostgresGenericCheckOperator(BaseOperator):
+    """
+    Operator for executing quality checks on data pipelines' end data
+    in a Postgres database.
+    """
+
+    ui_color = '#89DA59'
+
+    @apply_defaults
+    def __init__(self,
+                 db_conn_id,
+                 tests={},
+                 *args, **kwargs):
+        """
+        Args:
+            db_conn_id Conn Id of the database credentials
+            tests sequence of dicts of format
+                {"query": "<SQL query>", "expected": <val>}
+        Preconditions:
+            <SQL query> must give non-empty result
+        Caution:
+            only 1st value from 1st row of results will be used for comparison
+        """
+        # initialize the parent object
+        super(PostgresGenericCheckOperator, self).__init__(*args, **kwargs)
+
+        # store arguments as attributes
+        self.db_conn_id = db_conn_id
+        self.tests = tests
+
+    def execute(self, context):
+        """
+        Execute the test queries.
+
+        Args:
+            context provided by airflow
+        Returns:
+            None
+        """
+        # get db hook
+        pg_hook = PostgresHook(self.db_conn_id)
+
+        # set variable to denote test failure
+        passed = True
+
+        # execute all queries and get results
+        for test in self.tests:
+
+            q, r = test["query"], test["expected"]
+            ret = pg_hook.get_records(test["query"])
+
+            # no records found
+            if len(ret) < 1 or len(ret[0]) < 1:
+                self.log.error(
+                    f"Query {q} gave no result but {r} was expected")
+                passed = False
+
+            # record doesn't match the expected result
+            elif str(ret[0][0]) != str(test["expected"]):
+                self.log.error(
+                    f"Query {q} gave result {ret[0][0]} when {r} was expected")
+                passed = False
+
+            # record matches expectations
+            else:
+                self.log.info(
+                    f"Query {q} returned {r}, the expected result")
+
+        # signal failure
+        if not passed:
+            raise ValueError("Some tests failed. Check logs for details.")
+
+        # log success
+        else:
+            self.log.info(f"All {len(self.queries)} tests passed")

@@ -4,7 +4,7 @@ from operators.stage_redshift import StageRedshiftOperator
 from operators.load_fact import LoadFactOperator
 from operators.load_dimension import LoadDimensionOperator
 from operators.data_quality import PostgresCheckOperator, \
-    PostgresValueCheckOperator
+    PostgresValueCheckOperator, PostgresGenericCheckOperator
 
 
 # Defining the plugin class
@@ -15,5 +15,6 @@ class CustomPlugin(AirflowPlugin):
         LoadFactOperator,
         LoadDimensionOperator,
         PostgresCheckOperator,
-        PostgresValueCheckOperator
+        PostgresValueCheckOperator,
+        PostgresGenericCheckOperator
     ]
