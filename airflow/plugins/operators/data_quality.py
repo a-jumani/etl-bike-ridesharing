@@ -30,6 +30,7 @@ class PostgresCheckOperator(CheckOperator):
     def get_db_hook(self):
         return PostgresHook(self.postgres_conn_id)
 
+
 class PostgresValueCheckOperator(ValueCheckOperator):
     """ Performs check against a Postgres database. It expects an SQL query
     and checks if the resulting value matches the expected one. If it matches,
