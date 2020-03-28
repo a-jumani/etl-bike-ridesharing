@@ -253,7 +253,15 @@ load_fact_bike_rides = LoadFactOperator(
     select_clause=SqlQueries.load_fact_bike_rides
 )
 
-# TODO: test fact table
+# task: test bike rides fact table
+test_fact_bike_rides = PostgresValueCheckOperator(
+    task_id="Test_fact_bike_rides",
+    dag=dag,
+    sql=SqlFactsNDimTestsCheck.check_value_bike_rides["query"],
+    pass_value=SqlFactsNDimTestsCheck.check_value_bike_rides["value"],
+    postgres_conn_id="redshift",
+    tolerance=SqlFactsNDimTestsCheck.check_value_bike_rides["tolerance"]
+)
 
 # task: clear staging area
 end_n_clear_staging = PostgresOperator(
@@ -306,6 +314,7 @@ load_dim_weather_desc >> test_dim_weather_desc
  test_dim_weather_desc] >> dims_loaded >> load_fact_bike_rides
 
 # test fact table
+load_fact_bike_rides >> test_fact_bike_rides
 
 # clear staging tables
-dims_loaded >> end_n_clear_staging
+test_fact_bike_rides >> end_n_clear_staging

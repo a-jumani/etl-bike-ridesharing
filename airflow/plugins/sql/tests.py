@@ -37,3 +37,10 @@ class SqlFactsNDimTestsCheck:
         "value": 500,
         "tolerance": 50
     }
+
+    check_value_bike_rides = {
+        "query": "SELECT (SELECT COUNT(*) FROM public.staging_bike_rides) - \
+            (SELECT COUNT(*) FROM public.fact_bike_rides)",
+        "value": "0",
+        "tolerance": None
+    }
