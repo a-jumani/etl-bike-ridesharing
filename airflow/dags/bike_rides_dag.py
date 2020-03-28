@@ -11,7 +11,11 @@ from sql.tests import SqlStagingTestsCheck, SqlFactsNDimTestsCheck
 
 default_args = {
     "owner": "a-jumani",
-    "start_date": datetime(2020, 3, 23),
+    "start_date": datetime(2020, 3, 28),
+    "depends_on_past": False,                   # no past dependence
+    "retries": 0,                               # no retries
+    "concurrency": 1,                           # dag instances not concurrent
+    "catchup": False                            # catchup is off
 }
 
 dag = DAG(
