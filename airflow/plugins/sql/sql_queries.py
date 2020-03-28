@@ -35,28 +35,37 @@ class SqlInitTables:
             dropoff_longitude NUMERIC (13, 10) NOT NULL,
             dropoff_latitude  NUMERIC (13, 10) NOT NULL,
             trip_duration     INTEGER NOT NULL
-        );
+        )
+        DISTKEY (id)
+        SORTKEY (pickup_datetime);
 
         CREATE TABLE IF NOT EXISTS public.staging_holiday (
             day     VARCHAR (10) NOT NULL,
             date    VARCHAR (15) NOT NULL,
             holiday VARCHAR (50) NOT NULL
-        );
+        )
+        DISTSTYLE ALL;
 
         CREATE TABLE IF NOT EXISTS public.staging_temperature (
             datetime TIMESTAMP NOT NULL,
             value    NUMERIC (7, 3)
-        );
+        )
+        DISTSTYLE ALL
+        SORTKEY (datetime);
 
         CREATE TABLE IF NOT EXISTS public.staging_humidity (
             datetime TIMESTAMP NOT NULL,
             value    NUMERIC (5, 1)
-        );
+        )
+        DISTSTYLE ALL
+        SORTKEY (datetime);
 
         CREATE TABLE IF NOT EXISTS public.staging_weather_desc (
             datetime TIMESTAMP NOT NULL,
             value    VARCHAR (50)
-        );
+        )
+        DISTSTYLE ALL
+        SORTKEY (datetime);
     """
 
     create_fact_n_dims_tables = """
